@@ -58,7 +58,7 @@ def resolve_url(url, aliases):
     if scheme in aliases:
         return aliases[scheme] + path
     else:
-        return aliases
+        return url
 
 def detect_difference(old, new, kind):
     if 'sources' not in old or 'sources' not in new:
