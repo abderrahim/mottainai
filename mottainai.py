@@ -30,18 +30,18 @@ def get_file_contents(commit, filename):
         return contents
     return ''
 
-pat = re.compile(b' ([^ ]+)?({([^ ]+) => ([^ ]+)})?([^ ]+)?.bst +\| .*')
+pat = re.compile(' ([^ ]+)?({([^ ]+) => ([^ ]+)})?([^ ]+)?.bst +\| .*')
 
 def get_changed_files(commit1, commit2):
     diffstat = subprocess.check_output(git_diffstat + [commit1, commit2])
     for l in diffstat.splitlines()[:-1]:
-        m = pat.match(l)
+        m = pat.match(l.decode())
         
         if m is None:
             continue
 
-        file1 = construct_filename(m.group(1), m.group(3), m.group(5)) + b'.bst'
-        file2 = construct_filename(m.group(1), m.group(4), m.group(5)) + b'.bst'
+        file1 = construct_filename(m.group(1), m.group(3), m.group(5)) + '.bst'
+        file2 = construct_filename(m.group(1), m.group(4), m.group(5)) + '.bst'
 
         yield file1, file2
 
