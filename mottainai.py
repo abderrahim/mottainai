@@ -136,4 +136,8 @@ if __name__ == '__main__':
                 dirname = url_directory_name(resolve_url(url, aliases))
                 return os.path.join(sourcedir, kind, dirname)
 
-            print('mv', dirpath(oldurl, aliases1), dirpath(newurl, aliases2))
+            oldpath = dirpath(oldurl, aliases1)
+            newpath = dirpath(newurl, aliases2)
+
+            if oldpath != newpath:
+                print('mv', oldpath, newpath)
