@@ -4,9 +4,15 @@ from buildstream.utils import url_directory_name
 
 # functions that load buildstream files
 def load_project_conf(commit):
-    projectconf = safe_load(get_file_contents(commit, 'project.conf'))
+    projects = {}
 
-    return projectconf['aliases'], projectconf['element-path']
+    for prefix in get_projects(commit):
+        #print(prefix)
+        projectconf = safe_load(get_file_contents(commit, os.path.join(prefix, 'project.conf')))
+
+        projects[prefix] = projectconf['aliases'], projectconf['element-path']
+
+    return projects
 
 def get_sourcedir():
     buildstreamconf = safe_load(open(os.path.expanduser('~/.config/buildstream.conf')))
@@ -18,8 +24,19 @@ def get_sourcedir():
 
 # functions that call to git
 git_diffstat = ['git', 'diff', '--stat']
-git_lstree =  ['git', 'ls-tree']
+git_lstree =  ['git', 'ls-tree', '--full-tree']
 git_catfile = ['git', 'cat-file', 'blob']
+
+def get_projects(commit):
+    lstree = subprocess.check_output(git_lstree + ['-r', commit])
+    for l in lstree.splitlines():
+        _, _, sha, filename = l.split()
+
+        filename = filename.decode()
+
+        if os.path.basename(filename) == 'project.conf':
+            yield os.path.dirname(filename)
+
 
 def get_file_contents(commit, filename):
     #print(git_lstree + [commit, filename])
@@ -86,21 +103,31 @@ if __name__ == '__main__':
     else:
         commit1, commit2 = sys.argv[1:]
 
-    aliases1, elementpath1 = load_project_conf(commit1)
-    aliases2, elementpath2 = load_project_conf(commit2)
+    projects1 = load_project_conf(commit1)
+    projects2 = load_project_conf(commit2)
 
     sourcedir = get_sourcedir()
 
     for file1, file2 in get_changed_files(commit1, commit2):
         #print(file1, file2)
+
         old = safe_load(get_file_contents(commit1, file1))
         new = safe_load(get_file_contents(commit2, file2))
-        
+
         if not old or not new:
             continue
 
+        def find_project(filename, projects):
+            for prefix in projects1:
+                if file1.startswith(prefix):
+                    return projects1[prefix]
+
+        aliases1, elementpath1 = find_project(file1, projects1)
+        aliases2, elementpath2 = find_project(file2, projects2)
+
         for kind in ('git', 'ostree'):
             oldurl, newurl = detect_difference(old, new, kind)
+            #print(oldurl, newurl)
 
             if oldurl is None or newurl is None:
                 continue
